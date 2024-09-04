@@ -24,12 +24,11 @@ bool increasing = true;
 int pwmOutput = 0;
 
 void setupWheel(int pwmPin, int fwdPin, int bwdPin) {
-  pinMode(pwmPin, OUTPUT);
-  pinMode(fwdPin, OUTPUT);
-  pinMode(bwdPin, OUTPUT);
-  // Set initial rotation direction
-  digitalWrite(fwdPin, LOW);
-  digitalWrite(fwdPin, HIGH);
+    pinMode(pwmPin, OUTPUT);
+    pinMode(fwdPin, OUTPUT);
+    pinMode(bwdPin, OUTPUT);
+    digitalWrite(fwdPin, HIGH);
+    digitalWrite(bwdPin, HIGH);
 }
 
 void setup() {
@@ -51,26 +50,26 @@ void setWheelMovement(int pwm, bool direction, int pwmPin, int fwdPin, int bwdPi
 }
 
 void loop() {
-  if (increasing) {
-    if (pwmOutput >= 255) {
-      increasing = false;
+    if (increasing) {
+        if (pwmOutput >= 255) {
+            increasing = false;
+        } else {
+            pwmOutput = min(pwmOutput + 8, 255);
+        }
     } else {
-      pwmOutput = min(pwmOutput + 8, 255);
+        if (pwmOutput <= 0) {
+            if (rotDirection) wheel = (wheel + 1) % 4;
+            increasing = true;
+            rotDirection = !rotDirection;
+        } else {
+            pwmOutput = max(pwmOutput - 8, 0);
+        }
     }
-  } else {
-    if (pwmOutput <= 0) {
-        if (rotDirection) wheel = (wheel + 1) % 4;
-        increasing = true;
-        rotDirection = !rotDirection;
-    } else {
-      pwmOutput = max(pwmOutput - 8, 0);
-    }
-  }
 
-  setWheelMovement(wheel == 0 ? pwmOutput : 0, rotDirection, pwm1, pwr1Fwd, pwr1Bwd);
-  setWheelMovement(wheel == 1 ? pwmOutput : 0, rotDirection, pwm2, pwr2Fwd, pwr2Bwd);
-  setWheelMovement(wheel == 2 ? pwmOutput : 0, rotDirection, pwm3, pwr3Fwd, pwr3Bwd);
-  setWheelMovement(wheel == 3 ? pwmOutput : 0, rotDirection, pwm4, pwr4Fwd, pwr4Bwd);
+    setWheelMovement(wheel == 0 ? pwmOutput : 0, rotDirection, pwm1, pwr1Fwd, pwr1Bwd);
+    setWheelMovement(wheel == 1 ? pwmOutput : 0, rotDirection, pwm2, pwr2Fwd, pwr2Bwd);
+    setWheelMovement(wheel == 2 ? pwmOutput : 0, rotDirection, pwm3, pwr3Fwd, pwr3Bwd);
+    setWheelMovement(wheel == 3 ? pwmOutput : 0, rotDirection, pwm4, pwr4Fwd, pwr4Bwd);
 
-  delay(20);
+    delay(20);
 }
