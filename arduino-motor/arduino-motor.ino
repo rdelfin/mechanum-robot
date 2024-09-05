@@ -1,3 +1,5 @@
+#include <Wire.h>
+
 // Motor 1
 #define pwm1 (5)
 #define pwr1Fwd (2)
@@ -21,12 +23,32 @@
 // I2C
 #define slaveAddress (0x65)
 
+// Error codes
+#define ERROR_WRONG_LENGTH ("1")
+#define ERROR_PARSE ("2")
+#define ERROR_INVALID_MOTOR ("3")
+#define ERROR_INVALID_PWM ("4")
+
+#define RETURN_ERROR(ERR_CODE) \
+    Wire.write("ERR;"); \
+    Wire.write(ERR_CODE); \
+    return
+
+struct MotorData {
+    bool direction = false;
+    int pwmOutput = 0;
+};
+
+struct MotorData motors[4];
+
 bool rotDirection = false;
 int wheel = 0;
 bool increasing = true;
 int pwmOutput = 0;
 
 void setupWheel(int pwmPin, int fwdPin, int bwdPin) {
+    Wire.begin(slaveAddress);
+    Wire.onRequest(requestEvent);
     Serial.begin(9600);
     pinMode(pwmPin, OUTPUT);
     pinMode(fwdPin, OUTPUT);
@@ -53,23 +75,59 @@ void setWheelMovement(int pwm, bool direction, int pwmPin, int fwdPin, int bwdPi
     }
 }
 
-void printChange() {
-    Serial.println("Wheel change");
-    Serial.print("\tDirection: ");
-    Serial.println(rotDirection ? "fwd" : "bwd");
+bool isDigit(char c) {
+    return c >= '0' && c <= '9';
+}
 
-    Serial.print("\tIncreasing: ");
-    Serial.println(increasing ? "yes" : "no");
+int digitToInt(char c) {
+    return int(c - '0');
+}
 
-    Serial.print("\tWheel: ");
-    Serial.println(wheel);
+// Protocol:
+// We expect to receive a:
+// motor number (0-3) as ASCII, a '+' or a '-' depending on the direction you
+// want the motor to move in, and a 3-digit number between 000-255 (as ASCII),
+// representing the PWM duty cycle. The message should therefore have exactly 5
+// bytes.
+void requestEvent() {
+    if (Wire.available() != 5) {
+        RETURN_ERROR(ERROR_WRONG_LENGTH);
+    }
+
+    char motor_char = Wire.read();
+    if (!isDigit(motor_char)) {
+        RETURN_ERROR(ERROR_WRONG_LENGTH);
+    }
+    int motor_number = digitToInt(motor_char);
+    if (motor_number >= 4) {
+        RETURN_ERROR(ERROR_INVALID_MOTOR);
+    }
+
+    char direction_char = Wire.read();
+    if (direction_char != '+' || direction_char != '-') {
+        RETURN_ERROR(ERROR_PARSE);
+    }
+    bool direction = direction_char == '+' ? true : false;
+
+    char digit1 = Wire.read();
+    char digit2 = Wire.read();
+    char digit3 = Wire.read();
+    if (!isDigit(digit1) || !isDigit(digit2) || !isDigit(digit3)) {
+        RETURN_ERROR(ERROR_PARSE);
+    }
+    int pwm_val = digitToInt(digit1) * 100 + digitToInt(digit2) * 10 + digitToInt(digit3);
+    if (pwm_val > 255) {
+        RETURN_ERROR(ERROR_INVALID_PWM);
+    }
+
+    motors[motor_number].direction = direction;
+    motors[motor_number].pwmOutput = pwm_val;
 }
 
 void loop() {
     if (increasing) {
         if (pwmOutput >= 255) {
             increasing = false;
-            printChange();
         } else {
             pwmOutput = min(pwmOutput + 8, 255);
         }
@@ -78,16 +136,15 @@ void loop() {
             if (rotDirection) wheel = (wheel + 1) % 4;
             increasing = true;
             rotDirection = !rotDirection;
-            printChange();
         } else {
             pwmOutput = max(pwmOutput - 8, 0);
         }
     }
 
-    setWheelMovement(wheel == 0 ? pwmOutput : 0, rotDirection, pwm1, pwr1Fwd, pwr1Bwd);
-    setWheelMovement(wheel == 1 ? pwmOutput : 0, rotDirection, pwm2, pwr2Fwd, pwr2Bwd);
-    setWheelMovement(wheel == 2 ? pwmOutput : 0, rotDirection, pwm3, pwr3Fwd, pwr3Bwd);
-    setWheelMovement(wheel == 3 ? pwmOutput : 0, rotDirection, pwm4, pwr4Fwd, pwr4Bwd);
+    setWheelMovement(motors[0].pwmOutput, motors[0].direction, pwm1, pwr1Fwd, pwr1Bwd);
+    setWheelMovement(motors[1].pwmOutput, motors[1].direction, pwm2, pwr2Fwd, pwr2Bwd);
+    setWheelMovement(motors[2].pwmOutput, motors[2].direction, pwm3, pwr3Fwd, pwr3Bwd);
+    setWheelMovement(motors[3].pwmOutput, motors[3].direction, pwm4, pwr4Fwd, pwr4Bwd);
 
     delay(20);
 }
