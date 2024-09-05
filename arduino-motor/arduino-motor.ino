@@ -122,6 +122,7 @@ void requestEvent() {
 
     motors[motor_number].direction = direction;
     motors[motor_number].pwmOutput = pwm_val;
+    Wire.write("OK;");
 }
 
 void loop() {
@@ -146,5 +147,5 @@ void loop() {
     setWheelMovement(motors[2].pwmOutput, motors[2].direction, pwm3, pwr3Fwd, pwr3Bwd);
     setWheelMovement(motors[3].pwmOutput, motors[3].direction, pwm4, pwr4Fwd, pwr4Bwd);
 
-    delay(20);
+    delay(10);
 }
