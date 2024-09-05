@@ -18,12 +18,16 @@
 #define pwr4Fwd (11)
 #define pwr4Bwd (8)
 
+// I2C
+#define slaveAddress (0x65)
+
 bool rotDirection = false;
 int wheel = 0;
 bool increasing = true;
 int pwmOutput = 0;
 
 void setupWheel(int pwmPin, int fwdPin, int bwdPin) {
+    Serial.begin(9600);
     pinMode(pwmPin, OUTPUT);
     pinMode(fwdPin, OUTPUT);
     pinMode(bwdPin, OUTPUT);
@@ -49,10 +53,23 @@ void setWheelMovement(int pwm, bool direction, int pwmPin, int fwdPin, int bwdPi
     }
 }
 
+void printChange() {
+    Serial.println("Wheel change");
+    Serial.print("\tDirection: ");
+    Serial.println(rotDirection ? "fwd" : "bwd");
+
+    Serial.print("\tIncreasing: ");
+    Serial.println(increasing ? "yes" : "no");
+
+    Serial.print("\tWheel: ");
+    Serial.println(wheel);
+}
+
 void loop() {
     if (increasing) {
         if (pwmOutput >= 255) {
             increasing = false;
+            printChange();
         } else {
             pwmOutput = min(pwmOutput + 8, 255);
         }
@@ -61,6 +78,7 @@ void loop() {
             if (rotDirection) wheel = (wheel + 1) % 4;
             increasing = true;
             rotDirection = !rotDirection;
+            printChange();
         } else {
             pwmOutput = max(pwmOutput - 8, 0);
         }
