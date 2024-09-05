@@ -24,13 +24,13 @@
 #define slaveAddress (0x65)
 
 // Error codes
-#define ERROR_WRONG_LENGTH ("1")
-#define ERROR_PARSE ("2")
-#define ERROR_INVALID_MOTOR ("3")
-#define ERROR_INVALID_PWM ("4")
+#define ERROR_WRONG_LENGTH ("01")
+#define ERROR_PARSE ("02")
+#define ERROR_INVALID_MOTOR ("03")
+#define ERROR_INVALID_PWM ("04")
 
 #define RETURN_ERROR(ERR_CODE) \
-    Wire.write("ERR;"); \
+    Wire.write("ER;"); \
     Wire.write(ERR_CODE); \
     return
 
@@ -89,6 +89,9 @@ int digitToInt(char c) {
 // want the motor to move in, and a 3-digit number between 000-255 (as ASCII),
 // representing the PWM duty cycle. The message should therefore have exactly 5
 // bytes.
+// We always return 5 bytes: a status, a ';', and a 2 digit error code.
+// Basically, it's always either "OK;00" or "ER;XX" where "XX" are two digits
+// representing an error code.
 void requestEvent() {
     if (Wire.available() != 5) {
         RETURN_ERROR(ERROR_WRONG_LENGTH);
