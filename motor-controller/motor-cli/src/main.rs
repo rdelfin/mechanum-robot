@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[derive(Parser, Debug, Clone)]
 struct Cli {
     /// The path to the Linux device for this i2c bus. Usually something like `/dev/i2c-*`
-    #[arg(short = 'd', long, default_value = "/dev/i2c-0")]
+    #[arg(short = 'd', long, default_value = "/dev/i2c-1")]
     i2c_device: PathBuf,
     /// The i2c slave address where we can find the motor controller.
     #[arg(short = 'a', long, default_value_t = motor_controller::MOTOR_CONTROLLER_ADDRESS)]
