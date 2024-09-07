@@ -24,12 +24,14 @@
 #define slaveAddress (0x65)
 
 // Error codes
-#define ERROR_WRONG_LENGTH ("01")
-#define ERROR_PARSE ("02")
-#define ERROR_INVALID_MOTOR ("03")
-#define ERROR_INVALID_PWM ("04")
+#define ERROR_OK (0)
+#define ERROR_WRONG_LENGTH (1)
+#define ERROR_PARSE (2)
+#define ERROR_INVALID_MOTOR (3)
+#define ERROR_INVALID_PWM (4)
 
 #define RETURN_ERROR(ERR_CODE) \
+    error_code = ERR_CODE;      \
     Serial.print("Error: ");   \
     Serial.println(ERR_CODE);  \
     return
@@ -41,10 +43,8 @@ struct MotorData {
 
 struct MotorData motors[4];
 
-bool rotDirection = false;
-int wheel = 0;
-bool increasing = true;
-int pwmOutput = 0;
+// The error code returned via i2c
+char error_code = 0;
 
 void setupWheel(int pwmPin, int fwdPin, int bwdPin) {
     pinMode(pwmPin, OUTPUT);
@@ -89,9 +89,9 @@ int digitToInt(char c) {
 
 
 void requestEvent() {
-    Serial.println("Got request event");
-    Serial.println("Sending back OK;00");
-    Wire.write("OK;00");
+    Serial.print("Got request event, sending back code ");
+    Serial.println(error_code);
+    Wire.write(error_code);
 }
 
 // Protocol:
@@ -104,26 +104,29 @@ void requestEvent() {
 // Basically, it's always either "OK;00" or "ER;XX" where "XX" are two digits
 // representing an error code.
 void receiveData(int byte_count) {
+    // Reset error code
+    error_code = 0;
+
+    // Buffer for our data
+    char byte_data[7];
+
+    // ALWAYS read first so we can read more data later
+    for (int i = 0; i < byte_count; i++) {
+        byte_data[min(i, 6)] = Wire.read();
+    }
+
     Serial.print("Got ");
     Serial.print(byte_count);
     Serial.println(" byte(s)");
 
-    n = Wire.read();
-
-    // First byte is always 0 for some reason, so we actually see 6
-    if(byte_count != 6) {
+    // First two chars can be ignored
+    if(byte_count != 7) {
         Serial.print("Wrong number of available chars: ");
         Serial.println(byte_count);
         RETURN_ERROR(ERROR_WRONG_LENGTH);
     }
-    char first_char = Wire.read();
-    if (first_char != 0) {
-        Serial.print("Expected first char to be 0, saw ");
-        Serial.println(int(first_char));
-        RETURN_ERROR(ERROR_PARSE);
-    }
 
-    char motor_char = Wire.read();
+    char motor_char = byte_data[2];
     if (!isDigit(motor_char)) {
         Serial.print("Motor number is not a digit, is: ");
         Serial.println(int(motor_char));
@@ -135,16 +138,16 @@ void receiveData(int byte_count) {
         RETURN_ERROR(ERROR_INVALID_MOTOR);
     }
 
-    char direction_char = Wire.read();
+    char direction_char = byte_data[3];
     if (direction_char != '+' && direction_char != '-') {
         Serial.println("Direction char is not valid (not + or -)");
         RETURN_ERROR(ERROR_PARSE);
     }
     bool direction = direction_char == '+' ? true : false;
 
-    char digit1 = Wire.read();
-    char digit2 = Wire.read();
-    char digit3 = Wire.read();
+    char digit1 = byte_data[4];
+    char digit2 = byte_data[5];
+    char digit3 = byte_data[6];
     if (!isDigit(digit1) && !isDigit(digit2) && !isDigit(digit3)) {
         Serial.println("PWM value is not made up of 3 digits");
         RETURN_ERROR(ERROR_PARSE);
@@ -160,22 +163,6 @@ void receiveData(int byte_count) {
 }
 
 void loop() {
-    if (increasing) {
-        if (pwmOutput >= 255) {
-            increasing = false;
-        } else {
-            pwmOutput = min(pwmOutput + 8, 255);
-        }
-    } else {
-        if (pwmOutput <= 0) {
-            if (rotDirection) wheel = (wheel + 1) % 4;
-            increasing = true;
-            rotDirection = !rotDirection;
-        } else {
-            pwmOutput = max(pwmOutput - 8, 0);
-        }
-    }
-
     setWheelMovement(motors[0].pwmOutput, motors[0].direction, pwm1, pwr1Fwd, pwr1Bwd);
     setWheelMovement(motors[1].pwmOutput, motors[1].direction, pwm2, pwr2Fwd, pwr2Bwd);
     setWheelMovement(motors[2].pwmOutput, motors[2].direction, pwm3, pwr3Fwd, pwr3Bwd);
