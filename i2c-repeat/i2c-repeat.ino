@@ -20,8 +20,8 @@ void receiveData(int bytecount) {
     Serial.println(" byte(s)");
     for (int i = 0; i < bytecount; i++) {
         data_to_echo = Wire.read();
-        Serial.print("Got byte ");
-        Serial.println(data_to_echo);
+        Serial.print("Got byte 0x");
+        Serial.println(data_to_echo, HEX);
     }
 }
 
