@@ -52,6 +52,6 @@ fn set_cmd(mut controller: MotorController, cmd: SetCommand) -> anyhow::Result<(
         .motor_id
         .try_into()
         .map_err(|_| anyhow::anyhow!("invalid motor ID"))?;
-    controller.send_request(motor_id, cmd.value, direction)?;
+    controller.send_command(motor_id, cmd.value, direction)?;
     Ok(())
 }
