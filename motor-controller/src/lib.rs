@@ -3,7 +3,7 @@ use i2cdev::linux::LinuxI2CDevice;
 use int_enum::IntEnum;
 use std::path::Path;
 
-pub const MOTOR_CONTROLLER_ADDRESS: u16 = 0x52;
+pub const MOTOR_CONTROLLER_ADDRESS: u16 = 0x65;
 
 #[derive(thiserror::Error, Debug)]
 pub enum MotorError {
