@@ -2,23 +2,23 @@
 
 // Motor 1
 #define pwm1 (5)
-#define pwr1Fwd (2)
-#define pwr1Bwd (3)
+#define pwr1Fwd (3)
+#define pwr1Bwd (2)
 
 // Motor 2
 #define pwm2 (6)
-#define pwr2Fwd (4)
-#define pwr2Bwd (7)
+#define pwr2Fwd (7)
+#define pwr2Bwd (4)
 
 // Motor 3
 #define pwm3 (10)
-#define pwr3Fwd (13)
-#define pwr3Bwd (12)
+#define pwr3Fwd (12)
+#define pwr3Bwd (13)
 
 // Motor 4
 #define pwm4 (9)
-#define pwr4Fwd (11)
-#define pwr4Bwd (8)
+#define pwr4Fwd (8)
+#define pwr4Bwd (11)
 
 // I2C
 #define slaveAddress (0x65)
