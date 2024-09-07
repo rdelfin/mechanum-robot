@@ -30,8 +30,8 @@
 #define ERROR_INVALID_PWM ("04")
 
 #define RETURN_ERROR(ERR_CODE) \
-    Wire.write("ER;"); \
-    Wire.write(ERR_CODE); \
+    Serial.print("Error: ");   \
+    Serial.println(ERR_CODE);  \
     return
 
 struct MotorData {
@@ -47,9 +47,6 @@ bool increasing = true;
 int pwmOutput = 0;
 
 void setupWheel(int pwmPin, int fwdPin, int bwdPin) {
-    Wire.begin(slaveAddress);
-    Wire.onRequest(requestEvent);
-    Serial.begin(9600);
     pinMode(pwmPin, OUTPUT);
     pinMode(fwdPin, OUTPUT);
     pinMode(bwdPin, OUTPUT);
@@ -58,6 +55,13 @@ void setupWheel(int pwmPin, int fwdPin, int bwdPin) {
 }
 
 void setup() {
+    Wire.begin(slaveAddress);
+    Serial.begin(9600);
+    Serial.println("------------------------------ I am slave 0x65");
+    delay(1000);
+    Wire.onRequest(requestEvent);
+    Wire.onReceive(receiveData);
+
     setupWheel(pwm1, pwr1Fwd, pwr1Bwd);
     setupWheel(pwm2, pwr2Fwd, pwr2Bwd);
     setupWheel(pwm3, pwr3Fwd, pwr3Bwd);
@@ -83,6 +87,13 @@ int digitToInt(char c) {
     return int(c - '0');
 }
 
+
+void requestEvent() {
+    Serial.println("Got request event");
+    Serial.println("Sending back OK;00");
+    Wire.write("OK;00");
+}
+
 // Protocol:
 // We expect to receive a:
 // motor number (0-3) as ASCII, a '+' or a '-' depending on the direction you
@@ -92,22 +103,41 @@ int digitToInt(char c) {
 // We always return 5 bytes: a status, a ';', and a 2 digit error code.
 // Basically, it's always either "OK;00" or "ER;XX" where "XX" are two digits
 // representing an error code.
-void requestEvent() {
-    if (Wire.available() != 5) {
+void receiveData(int byte_count) {
+    Serial.print("Got ");
+    Serial.print(byte_count);
+    Serial.println(" byte(s)");
+
+    n = Wire.read();
+
+    // First byte is always 0 for some reason, so we actually see 6
+    if(byte_count != 6) {
+        Serial.print("Wrong number of available chars: ");
+        Serial.println(byte_count);
         RETURN_ERROR(ERROR_WRONG_LENGTH);
+    }
+    char first_char = Wire.read();
+    if (first_char != 0) {
+        Serial.print("Expected first char to be 0, saw ");
+        Serial.println(int(first_char));
+        RETURN_ERROR(ERROR_PARSE);
     }
 
     char motor_char = Wire.read();
     if (!isDigit(motor_char)) {
-        RETURN_ERROR(ERROR_WRONG_LENGTH);
+        Serial.print("Motor number is not a digit, is: ");
+        Serial.println(int(motor_char));
+        RETURN_ERROR(ERROR_PARSE);
     }
     int motor_number = digitToInt(motor_char);
     if (motor_number >= 4) {
+        Serial.println("Motor number is more than 3");
         RETURN_ERROR(ERROR_INVALID_MOTOR);
     }
 
     char direction_char = Wire.read();
-    if (direction_char != '+' || direction_char != '-') {
+    if (direction_char != '+' && direction_char != '-') {
+        Serial.println("Direction char is not valid (not + or -)");
         RETURN_ERROR(ERROR_PARSE);
     }
     bool direction = direction_char == '+' ? true : false;
@@ -115,17 +145,18 @@ void requestEvent() {
     char digit1 = Wire.read();
     char digit2 = Wire.read();
     char digit3 = Wire.read();
-    if (!isDigit(digit1) || !isDigit(digit2) || !isDigit(digit3)) {
+    if (!isDigit(digit1) && !isDigit(digit2) && !isDigit(digit3)) {
+        Serial.println("PWM value is not made up of 3 digits");
         RETURN_ERROR(ERROR_PARSE);
     }
     int pwm_val = digitToInt(digit1) * 100 + digitToInt(digit2) * 10 + digitToInt(digit3);
     if (pwm_val > 255) {
+        Serial.println("PWM value is more than 255");
         RETURN_ERROR(ERROR_INVALID_PWM);
     }
 
     motors[motor_number].direction = direction;
     motors[motor_number].pwmOutput = pwm_val;
-    Wire.write("OK;");
 }
 
 void loop() {
