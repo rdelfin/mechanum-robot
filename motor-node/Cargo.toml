@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-robotica = { git = "https://github.com/rdelfin/robotica", rev = "08052aa441dec080524238db6888210209ecf761", version = "0.1.0" }
+robotica = { workspace = true }
 motor-controller = { path = "../motor-controller", version = "0.1.0" }
 mechanum-protos = { path = "../mechanum-protos", version = "0.1.0" }
 anyhow = "1.0.89"

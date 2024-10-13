@@ -6,3 +6,6 @@ members = [
     "motor-controller/motor-cli",
     "motor-node",
 ]
+
+[workspace.dependencies]
+robotica = { git = "https://github.com/rdelfin/robotica", rev = "5b990e529a7d96b3a9f1364086455d43c612e48b", version = "0.1.0" }
