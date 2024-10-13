@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "mechanum-protos",
     "motor-controller",
     "motor-controller/motor-cli",
 ]
