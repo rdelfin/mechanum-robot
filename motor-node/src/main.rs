@@ -1,10 +1,10 @@
 use mechanum_protos::MotorCommand;
 use motor_controller::{Direction, Motor, MotorController};
-use robotica::{Node, Subscriber};
+use robotica::{LogConfig, Node, Subscriber};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let node = Node::new("motor-node").await?;
+    let node = Node::new_with_logging("motor-node", LogConfig::new()).await?;
     let mut controller = MotorController::new("/dev/i2c-1")?;
     let sub: Subscriber<MotorCommand> = node.subscribe("robot/chassis/motors").await?;
 
