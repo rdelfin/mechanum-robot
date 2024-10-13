@@ -5,7 +5,10 @@ members = [
     "motor-controller",
     "motor-controller/motor-cli",
     "nodes/motor-node",
+    "nodes/mechanum-chassis-node",
 ]
 
 [workspace.dependencies]
 robotica = { git = "https://github.com/rdelfin/robotica", rev = "5b990e529a7d96b3a9f1364086455d43c612e48b", version = "0.1.0" }
+tokio = { version = "1.40", features = ["full"] }
+anyhow = "1.0"
