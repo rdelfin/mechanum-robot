@@ -32,8 +32,6 @@
 
 #define RETURN_ERROR(ERR_CODE) \
     error_code = ERR_CODE;      \
-    Serial.print("Error: ");   \
-    Serial.println(ERR_CODE);  \
     return
 
 struct MotorData {
@@ -89,8 +87,6 @@ int digitToInt(char c) {
 
 
 void requestEvent() {
-    Serial.print("Got request event, sending back code ");
-    Serial.println(error_code);
     Wire.write(error_code);
 }
 
@@ -115,32 +111,22 @@ void receiveData(int byte_count) {
         byte_data[min(i, 6)] = Wire.read();
     }
 
-    Serial.print("Got ");
-    Serial.print(byte_count);
-    Serial.println(" byte(s)");
-
     // First two chars can be ignored
     if(byte_count != 7) {
-        Serial.print("Wrong number of available chars: ");
-        Serial.println(byte_count);
         RETURN_ERROR(ERROR_WRONG_LENGTH);
     }
 
     char motor_char = byte_data[2];
     if (!isDigit(motor_char)) {
-        Serial.print("Motor number is not a digit, is: ");
-        Serial.println(int(motor_char));
         RETURN_ERROR(ERROR_PARSE);
     }
     int motor_number = digitToInt(motor_char);
     if (motor_number >= 4) {
-        Serial.println("Motor number is more than 3");
         RETURN_ERROR(ERROR_INVALID_MOTOR);
     }
 
     char direction_char = byte_data[3];
     if (direction_char != '+' && direction_char != '-') {
-        Serial.println("Direction char is not valid (not + or -)");
         RETURN_ERROR(ERROR_PARSE);
     }
     bool direction = direction_char == '+' ? true : false;
@@ -149,12 +135,10 @@ void receiveData(int byte_count) {
     char digit2 = byte_data[5];
     char digit3 = byte_data[6];
     if (!isDigit(digit1) && !isDigit(digit2) && !isDigit(digit3)) {
-        Serial.println("PWM value is not made up of 3 digits");
         RETURN_ERROR(ERROR_PARSE);
     }
     int pwm_val = digitToInt(digit1) * 100 + digitToInt(digit2) * 10 + digitToInt(digit3);
     if (pwm_val > 255) {
-        Serial.println("PWM value is more than 255");
         RETURN_ERROR(ERROR_INVALID_PWM);
     }
 

@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
             .await?;
 
         tokio::select! {
-            _ = tokio::time::sleep(Duration::from_secs(1)) => {},
+            _ = tokio::time::sleep(Duration::from_millis(100)) => {},
             _ = tokio::signal::ctrl_c() => { break; },
         }
     }
