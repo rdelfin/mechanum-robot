@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-prost = "0.13.3"
-prost-reflect = { version = "0.14.2", features = ["derive", "serde", "text-format"] }
+prost = "0.13.4"
+prost-reflect = { version = "0.14.6", features = ["derive", "serde", "text-format"] }
 
 [build-dependencies]
 prost-build = "0.13.3"

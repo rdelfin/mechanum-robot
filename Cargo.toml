@@ -2,8 +2,6 @@
 resolver = "2"
 members = [
     "mechanum-protos",
-    "motor-controller",
-    "motor-controller/motor-cli",
     "nodes/motor-node",
     "nodes/mechanum-chassis-node",
 ]

@@ -3,20 +3,12 @@ syntax = "proto3";
 package mechanum;
 
 enum MotorId {
-  MOTOR_ID_FRONT_LEFT = 0;
-  MOTOR_ID_FRONT_RIGHT = 1;
-  MOTOR_ID_BACK_LEFT = 2;
-  MOTOR_ID_BACK_RIGHT = 3;
-}
-
-enum Direction {
-  DIRECTION_FORWARD = 0;
-  DIRECTION_BACKWARD = 1;
+  MOTOR_ID_A = 0;
+  MOTOR_ID_B = 1;
 }
 
 message MotorCommand {
   MotorId motor_id = 1;
-  // Range is [0, 255]
-  int32 pwm_val = 2;
-  Direction direction = 3;
+  // Range is [-1.0, 1.0]
+  float speed = 2;
 }

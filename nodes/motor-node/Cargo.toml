@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-robotica = { workspace = true }
-motor-controller = { path = "../../motor-controller", version = "0.1.0" }
-mechanum-protos = { path = "../../mechanum-protos", version = "0.1.0" }
 anyhow = { workspace = true }
+clap = { version = "4.5.30", features = ["derive"] }
+mechanum-protos = { path = "../../mechanum-protos", version = "0.1.0" }
+pololu-motoron = { git = "https://github.com/rdelfin/pololu-motoron", rev = "4c809d402dce924dad2c70db0b351f9d8a78aa22", version = "0.1.0" }
+robotica = { workspace = true }
 tokio = { workspace = true }
