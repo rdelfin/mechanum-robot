@@ -4,8 +4,9 @@ use mechanum_protos::MotorCommand;
 use pololu_motoron::ControllerType;
 use robotica::{LogConfig, Node, Subscriber};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -38,8 +39,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Setup the writer thread
     let speed_data_clone = speed_data.clone();
-    let jh = tokio::task::spawn_blocking(move || {
-        if let Err(e) = write_speed(speed_data_clone, controller) {
+    let jh = tokio::task::spawn(async move {
+        if let Err(e) = write_speed(speed_data_clone, controller).await {
             error!("Error in write speed thread, exiting. Error: {e}");
             std::process::exit(-1);
         }
@@ -64,21 +65,19 @@ async fn recv_messages(
             mechanum_protos::MotorId::A => 0,
             mechanum_protos::MotorId::B => 1,
         };
-        let mut speed_data = speed_data.lock().unwrap();
+        let mut speed_data = speed_data.lock().await;
         speed_data[motor_id] = msg.speed;
     }
     Ok(())
 }
 
-fn write_speed(
+async fn write_speed(
     speed_data: Arc<Mutex<Vec<f32>>>,
     mut controller: pololu_motoron::Device,
 ) -> anyhow::Result<()> {
     loop {
-        {
-            let speed_data = speed_data.lock().unwrap();
-            controller.set_all_speeds(&speed_data)?;
-        }
-        std::thread::sleep(Duration::from_millis(5));
+        let speed_data = speed_data.lock().await.clone();
+        controller.set_all_speeds(&speed_data)?;
+        tokio::time::sleep(Duration::from_millis(5)).await;
     }
 }
