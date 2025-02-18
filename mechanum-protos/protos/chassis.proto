@@ -6,3 +6,9 @@ message TankChassisCommand {
   float left = 1;
   float right = 2;
 }
+
+message MechanumChassisCommand {
+  float longitudinal = 1;
+  float lateral = 2;
+  float rotation = 3;
+}

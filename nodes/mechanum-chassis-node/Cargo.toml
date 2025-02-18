@@ -9,3 +9,4 @@ mechanum-protos = { path = "../../mechanum-protos", version = "0.1.0" }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 prost = "0.13.5"
+clap = { version = "4.5.30", features = ["derive"] }

@@ -1,23 +1,31 @@
-use mechanum_protos::{MotorCommand, MotorId, TankChassisCommand};
+use clap::{Parser, ValueEnum};
+use mechanum_protos::{MechanumChassisCommand, MotorCommand, MotorId, TankChassisCommand};
 use robotica::{LogConfig, Node, Publisher, Subscriber};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
 
-struct RawChassisCommand {
-    front_left: f32,
-    front_right: f32,
-    back_left: f32,
-    back_right: f32,
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short = 't', long)]
+    control_type: MotorControlType,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
     let node = Node::new_with_logging("mechanum-chassis-node", LogConfig::new()).await?;
     let publisher_front: Publisher<MotorCommand> =
         node.publish("robot/chassis/motors/front").await?;
     let publisher_back: Publisher<MotorCommand> = node.publish("robot/chassis/motors/back").await?;
 
-    run_with_control::<TankControls>(&node, publisher_front, publisher_back).await
+    match args.control_type {
+        MotorControlType::Tank => {
+            run_with_control::<TankControls>(&node, publisher_front, publisher_back).await
+        }
+        MotorControlType::Mechanum => {
+            run_with_control::<MechanumControls>(&node, publisher_front, publisher_back).await
+        }
+    }
 }
 
 async fn run_with_control<'n, C: MotorControl>(
@@ -75,6 +83,20 @@ async fn publish_loop<C: MotorControl>(
     }
 }
 
+struct RawChassisCommand {
+    front_left: f32,
+    front_right: f32,
+    back_left: f32,
+    back_right: f32,
+}
+
+#[derive(ValueEnum, Debug, Clone)] // ArgEnum here
+#[clap(rename_all = "kebab_case")]
+enum MotorControlType {
+    Tank,
+    Mechanum,
+}
+
 trait MotorControl {
     const TOPIC_NAME: &'static str;
     type Command: Default + prost::Name;
@@ -91,6 +113,20 @@ impl MotorControl for TankControls {
             front_right: msg.right,
             back_left: msg.left,
             back_right: msg.right,
+        }
+    }
+}
+
+struct MechanumControls;
+impl MotorControl for MechanumControls {
+    const TOPIC_NAME: &'static str = "robot/chassis/mechanum";
+    type Command = MechanumChassisCommand;
+    fn controls(msg: &MechanumChassisCommand) -> RawChassisCommand {
+        RawChassisCommand {
+            front_left: msg.longitudinal,
+            front_right: msg.longitudinal,
+            back_left: msg.lateral,
+            back_right: msg.lateral,
         }
     }
 }
