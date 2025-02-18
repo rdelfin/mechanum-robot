@@ -1,5 +1,8 @@
 use clap::{Parser, ValueEnum};
-use mechanum_protos::{MechanumChassisCommand, MotorCommand, MotorId, TankChassisCommand};
+use mechanum_protos::{
+    DifferentialChassisCommand, MechanumChassisCommand, MotorCommand, MotorId, TankChassisCommand,
+};
+use robotica::tracing::info;
 use robotica::{LogConfig, Node, Publisher, Subscriber};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
@@ -24,6 +27,9 @@ async fn main() -> anyhow::Result<()> {
         }
         MotorControlType::Mechanum => {
             run_with_control::<MechanumControls>(&node, publisher_front, publisher_back).await
+        }
+        MotorControlType::Differential => {
+            run_with_control::<DifferentialControls>(&node, publisher_front, publisher_back).await
         }
     }
 }
@@ -50,6 +56,7 @@ async fn recv_loop<C: Default + prost::Name>(
 ) -> anyhow::Result<()> {
     loop {
         let msg = subscriber.recv().await?;
+        info!("Got message: {:?}", msg.message);
         *chassis_cmd.write().await = msg.message;
     }
 }
@@ -65,7 +72,6 @@ async fn publish_loop<C: MotorControl>(
             let current_cmd = chassis_cmd.read().await;
             C::controls(&current_cmd)
         };
-
         publisher_front
             .send(&motor_command(MotorId::B, command.front_left))
             .await?;
@@ -83,6 +89,7 @@ async fn publish_loop<C: MotorControl>(
     }
 }
 
+#[derive(Debug, Clone, Default, PartialEq)]
 struct RawChassisCommand {
     front_left: f32,
     front_right: f32,
@@ -95,6 +102,7 @@ struct RawChassisCommand {
 enum MotorControlType {
     Tank,
     Mechanum,
+    Differential,
 }
 
 trait MotorControl {
@@ -113,6 +121,22 @@ impl MotorControl for TankControls {
             front_right: msg.right,
             back_left: msg.left,
             back_right: msg.right,
+        }
+    }
+}
+
+struct DifferentialControls;
+impl MotorControl for DifferentialControls {
+    const TOPIC_NAME: &'static str = "robot/chassis/simple";
+    type Command = DifferentialChassisCommand;
+    fn controls(msg: &DifferentialChassisCommand) -> RawChassisCommand {
+        let right = msg.speed + msg.rotation * 0.2;
+        let left = msg.speed - msg.rotation * 0.2;
+        RawChassisCommand {
+            front_left: left,
+            front_right: right,
+            back_left: left,
+            back_right: right,
         }
     }
 }

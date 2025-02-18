@@ -12,3 +12,8 @@ message MechanumChassisCommand {
   float lateral = 2;
   float rotation = 3;
 }
+
+message DifferentialChassisCommand {
+  float speed = 1;
+  float rotation = 2;
+}
