@@ -4,6 +4,7 @@ members = [
     "mechanum-protos",
     "nodes/motor-node",
     "nodes/mechanum-chassis-node",
+    "nodes/gamepad-chassis",
 ]
 
 [workspace.dependencies]
