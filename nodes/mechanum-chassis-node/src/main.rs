@@ -2,7 +2,6 @@ use clap::{Parser, ValueEnum};
 use mechanum_protos::{
     DifferentialChassisCommand, MechanumChassisCommand, MotorCommand, MotorId, TankChassisCommand,
 };
-use robotica::tracing::info;
 use robotica::{LogConfig, Node, Publisher, Subscriber};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::RwLock;
@@ -56,7 +55,6 @@ async fn recv_loop<C: Default + prost::Name>(
 ) -> anyhow::Result<()> {
     loop {
         let msg = subscriber.recv().await?;
-        info!("Got message: {:?}", msg.message);
         *chassis_cmd.write().await = msg.message;
     }
 }

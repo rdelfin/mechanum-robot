@@ -25,6 +25,7 @@ async fn main() -> anyhow::Result<()> {
     let number_motors = ControllerType::M2T256.motor_channels();
     let mut controller =
         pololu_motoron::Device::new(ControllerType::M2T256, args.device, args.address)?;
+    controller.reinitialise()?;
     let topic_name = format!("robot/chassis/motors/{}", args.controller_name);
     let sub: Subscriber<MotorCommand> = node.subscribe(topic_name).await?;
 
