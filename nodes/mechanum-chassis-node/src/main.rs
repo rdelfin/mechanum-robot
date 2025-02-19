@@ -128,8 +128,8 @@ impl MotorControl for DifferentialControls {
     const TOPIC_NAME: &'static str = "robot/chassis/simple";
     type Command = DifferentialChassisCommand;
     fn controls(msg: &DifferentialChassisCommand) -> RawChassisCommand {
-        let right = msg.speed + msg.rotation * 0.2;
-        let left = msg.speed - msg.rotation * 0.2;
+        let right = msg.speed - msg.rotation * 0.2;
+        let left = msg.speed + msg.rotation * 0.2;
         RawChassisCommand {
             front_left: left,
             front_right: right,
