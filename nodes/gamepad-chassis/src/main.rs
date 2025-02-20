@@ -180,4 +180,5 @@ fn get_axis_value(gamepad_state: &GamepadState, axis: Axis, axis_map: &HashMap<A
         .axis_data(*axis_map.get(&axis).expect("no code for axis"))
         .map(|d| d.value())
         .unwrap_or(0.0)
+        .clamp(-1., 1.)
 }

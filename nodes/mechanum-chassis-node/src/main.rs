@@ -128,8 +128,8 @@ impl MotorControl for DifferentialControls {
     const TOPIC_NAME: &'static str = "robot/chassis/simple";
     type Command = DifferentialChassisCommand;
     fn controls(msg: &DifferentialChassisCommand) -> RawChassisCommand {
-        let right = msg.speed - msg.rotation * 0.2;
-        let left = msg.speed + msg.rotation * 0.2;
+        let right = clamp_with_nan(msg.speed - msg.rotation);
+        let left = clamp_with_nan(msg.speed + msg.rotation);
         RawChassisCommand {
             front_left: left,
             front_right: right,
@@ -145,10 +145,10 @@ impl MotorControl for MechanumControls {
     type Command = MechanumChassisCommand;
     fn controls(msg: &MechanumChassisCommand) -> RawChassisCommand {
         RawChassisCommand {
-            front_left: msg.longitudinal,
-            front_right: msg.longitudinal,
-            back_left: msg.lateral,
-            back_right: msg.lateral,
+            front_left: clamp_with_nan((msg.longitudinal + msg.lateral + msg.rotation) / 2.),
+            front_right: clamp_with_nan((msg.longitudinal - msg.lateral - msg.rotation) / 2.),
+            back_left: clamp_with_nan((msg.longitudinal - msg.lateral + msg.rotation) / 2.),
+            back_right: clamp_with_nan((msg.longitudinal + msg.lateral - msg.rotation) / 2.),
         }
     }
 }
@@ -157,5 +157,13 @@ fn motor_command(motor_id: MotorId, speed: f32) -> MotorCommand {
     MotorCommand {
         motor_id: motor_id.into(),
         speed,
+    }
+}
+
+fn clamp_with_nan(v: f32) -> f32 {
+    if v.is_nan() {
+        0.
+    } else {
+        v.clamp(-1., 1.)
     }
 }
