@@ -7,5 +7,5 @@ context = "./docker"
 
 [build.env]
 passthrough = [
-  "PKG_CONFIG=/usr/bin/aarch64-linux-gnu-pkg-config",
+  "PKG_CONFIG_aarch64_unknown_linux_gnu=/usr/bin/aarch64-linux-gnu-pkg-config",
 ]
