@@ -1,8 +1,8 @@
 use clap::Parser;
 use log::{error, info};
-use mechanum_protos::MotorCommand;
+use mechanum_protos::{FullMotorCommand, MotorCommand};
 use pololu_motoron::ControllerType;
-use robotica::{LogConfig, Node, Subscriber};
+use robotica::{LogConfig, Node, Publisher, Subscriber};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -26,8 +26,10 @@ async fn main() -> anyhow::Result<()> {
     let mut controller =
         pololu_motoron::Device::new(ControllerType::M2T256, args.device, args.address)?;
     controller.reinitialise()?;
-    let topic_name = format!("robot/chassis/motors/{}", args.controller_name);
-    let sub: Subscriber<MotorCommand> = node.subscribe(topic_name).await?;
+    let sub_topic_name = format!("robot/chassis/motors/{}", args.controller_name);
+    let pub_topic_name = format!("robot/chassis/motors_full/{}", args.controller_name);
+    let sub: Subscriber<MotorCommand> = node.subscribe(sub_topic_name).await?;
+    let publisher: Publisher<'_, FullMotorCommand> = node.publish(pub_topic_name).await?;
 
     // Setup the speed data we will communicate across threads
     let initial_speed_data = vec![0.0f32; usize::from(number_motors)];
@@ -40,24 +42,23 @@ async fn main() -> anyhow::Result<()> {
 
     // Setup the writer thread
     let speed_data_clone = speed_data.clone();
-    let jh = tokio::task::spawn(async move {
-        if let Err(e) = write_speed(speed_data_clone, controller).await {
+    let write_future = async move {
+        if let Err(e) = write_speed(speed_data_clone, controller, publisher).await {
             error!("Error in write speed thread, exiting. Error: {e}");
             std::process::exit(-1);
         }
-    });
+    };
 
     tokio::select! {
         res = recv_messages(sub, speed_data) => { res },
-        res = jh => {
-            res?;
+        _ = write_future => {
             Err(anyhow::anyhow!("write speed thread exited unexpectedly, quitting"))
         }
     }
 }
 
 async fn recv_messages(
-    sub: Subscriber<'_, MotorCommand>,
+    sub: Subscriber<MotorCommand>,
     speed_data: Arc<Mutex<Vec<f32>>>,
 ) -> anyhow::Result<()> {
     while let Ok(msg) = sub.recv().await {
@@ -75,10 +76,17 @@ async fn recv_messages(
 async fn write_speed(
     speed_data: Arc<Mutex<Vec<f32>>>,
     mut controller: pololu_motoron::Device,
+    publisher: Publisher<'_, FullMotorCommand>,
 ) -> anyhow::Result<()> {
     loop {
         let speed_data = speed_data.lock().await.clone();
         controller.set_all_speeds(&speed_data)?;
+        publisher
+            .send(&FullMotorCommand {
+                speed_a: speed_data[0],
+                speed_b: speed_data[1],
+            })
+            .await?;
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
 }

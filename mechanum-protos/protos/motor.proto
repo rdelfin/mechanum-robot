@@ -12,3 +12,8 @@ message MotorCommand {
   // Range is [-1.0, 1.0]
   float speed = 2;
 }
+
+message FullMotorCommand {
+  float speed_a = 1;
+  float speed_b = 2;
+}

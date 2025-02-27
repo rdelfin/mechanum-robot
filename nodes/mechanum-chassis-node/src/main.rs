@@ -50,7 +50,7 @@ async fn run_with_control<'n, C: MotorControl>(
 }
 
 async fn recv_loop<C: Default + prost::Name>(
-    subscriber: Subscriber<'_, C>,
+    subscriber: Subscriber<C>,
     chassis_cmd: Arc<RwLock<C>>,
 ) -> anyhow::Result<()> {
     loop {
